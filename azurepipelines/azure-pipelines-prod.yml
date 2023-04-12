@@ -1,0 +1,67 @@
+
+jobs:
+  - job: BuildAndPushImage
+    condition: eq(variables['img_update'],'true')
+    pool:
+      vmImage: ubuntu-latest
+
+    steps:
+      - checkout: templatesProd
+        fetchDepth: 1
+
+      - task: printAllVariables@1
+        enabled: true
+        displayName: 'Print all variables'
+        continueOnError: True
+
+      - task: Docker@2
+        displayName: Build Python API image"
+        inputs:
+          containerRegistry: 'DevOps_CR_SC'
+          repository: $(repo)
+          command: 'build'
+          Dockerfile: 'Dockerfile'
+          tags: |
+            $(Build.BuildId)
+            latestprod
+          arguments: '--build-arg SQLSERVER="$(SQL_SERVER_QA)" --build-arg SQLPASS="$(SQL_PASS)" --build-arg SQLSA="$(SQL_SA)" --build-arg SQLSTR="prod"'
+
+      - task: Docker@2
+        displayName: "Push Python API image"
+        inputs:
+          containerRegistry: 'DevOps_CR_SC'
+          repository: $(repo)
+          command: 'push'
+          tags: |
+            latestprod
+
+  - job: DeployImageToAppService
+    dependsOn: 
+      - BuildAndPushImage
+    condition: eq(variables['run'],'true')
+    steps:
+      - task: AzureWebAppContainer@1
+        displayName: "Deploy Image to App Service"
+        enabled: true
+        inputs:
+          azureSubscription: 'DevOps_SC'
+          appName: $(app)
+          deployToSlotOrASE: true
+          resourceGroupName: $(rg_appservice)
+          slotName: 'production'
+          containers: $(docker_img_path)
+          appSettings: |
+              -WEBSITES_CONTAINER_START_TIME_LIMIT 1800 -WEBSITES_PORT 80 -PORT 80 -DOCKER_REGISTRY_SERVER_PASSWORD $(crSecret) -DOCKER_REGISTRY_SERVER_URL $(crURL) -DOCKER_REGISTRY_SERVER_USERNAME $(crAdmin)
+            
+      - task: AzureAppServiceSettings@1
+        enabled: false
+        displayName: Update App Service Settings
+        inputs:
+          azureSubscription: 'DevOps_SC'
+          appName: $(app)
+          generalSettings: |
+            [
+              {
+                "alwaysOn": true
+              }
+            ]

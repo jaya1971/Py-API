@@ -1,0 +1,7 @@
+pyodbc==4.0.35
+python-dotenv==0.20.0
+requests==2.22.0
+requests-unixsocket==0.2.0
+urllib3==1.25.8
+Flask==2.2.2
+Flask-RESTful==0.3.9

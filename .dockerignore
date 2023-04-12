@@ -1,0 +1,5 @@
+data/*
+.git
+.env
+OLD_Dockerfile
+OLD_requirements.txt

@@ -1,0 +1,71 @@
+trigger:
+ branches:
+   include:
+     - master
+     - instance/dev
+
+# Created parameters to deploy from ADO platform
+parameters:
+- name: Action
+  displayName: Deploy or Update
+  type: string
+  default: Update
+  values:
+  - Deploy
+  - Update
+- name: UpdateRegistry
+  displayName: Update docker image repo
+  type: string
+  default: 'false'
+  values:
+  - 'true'
+  - 'false'
+- name: DeployAppSvc
+  displayName: Deploy img to app service
+  type: string
+  default: 'false'
+  values:
+  - 'true'
+  - 'false'
+
+
+variables: 
+- name: 'app'
+  value: '' #App name in app service
+- name: 'repo'
+  value: 'CR_REPOSITORY' #Azure Container Repository
+- name: 'rg_appservice'
+  value: 'systems_automation' #Resource group where app service resides
+- name: 'docker_img_path'
+  value: 'CR_LOGINSERVER_URL/CR_REPOSITORY:IMAGE_TAG' #Docker Image Path in Azure Container Registry (CR)
+- name: 'run'
+  value: ${{ parameters.DeployAppSvc }}
+- name: 'img_update'
+  value: ${{ parameters.UpdateRegistry }}
+- group: 'pyAPI-variables'
+ 
+resources:
+  repositories:
+    - repository: templatesProd
+      type: git
+      name: DevOps/API.Py
+      ref: master
+
+    - repository: templatesDev
+      type: git
+      name: DevOps/API.Py
+      ref: instance/dev
+
+stages:
+#######################################################################
+- stage: Dev
+  displayName: "Build and Deploy to Dev"
+  jobs:
+  - template: azurepipelines/azure-pipelines-dev.yml@templatesDev
+  condition: and(eq(variables['Build.SourceBranch'], 'refs/heads/instance/dev'),eq('${{ parameters.Action }}','Deploy'))
+#######################################################################
+- stage: Prod
+  displayName: "Build and Deploy to Prod"
+  jobs:
+  - template: azurepipelines/azure-pipelines-prod.yml@templatesProd
+  condition: and(eq(variables['Build.SourceBranch'], 'refs/heads/master'),eq('${{ parameters.Action }}','Deploy'))
