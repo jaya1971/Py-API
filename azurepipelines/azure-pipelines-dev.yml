@@ -54,7 +54,7 @@ jobs:
               -WEBSITES_CONTAINER_START_TIME_LIMIT 1800 -WEBSITES_PORT 80 -PORT 80 -DOCKER_REGISTRY_SERVER_PASSWORD $(crSecret) -DOCKER_REGISTRY_SERVER_URL $(crURL) -DOCKER_REGISTRY_SERVER_USERNAME $(crAdmin)
 
       - task: AzureAppServiceSettings@1
-        enabled: false
+        enabled: true
         displayName: Update App Service Settings
         inputs:
           azureSubscription: 'DevOps_SC'
