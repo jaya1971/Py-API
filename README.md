@@ -6,6 +6,7 @@ Deploy a Python API to an Azure App service with Azure container registry and Az
 ![image](https://github.com/jaya1971/Py-API/assets/43556775/45ee8ce2-779f-481b-998b-060ff67fe465)
 ---
 Objective
+
 This post is to show how to publish a docker container image to an Azure Container registry, then deploy that image to Azure App Service. The web API will require a connection to an On-Prem database in a SQL server instance using the App Services' Hybrid connection feature. This uses a very simple python API creation calling stored procedures on a SQL server that returns results in a JSON format. The repository can be found here.
 
 Repository: https://github.com/jaya1971/Py-API
