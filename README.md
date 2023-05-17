@@ -3,7 +3,8 @@
 Deploy a Python API to an Azure App service with Azure container registry and Azure DevOps
 
 ---
-
+![image](https://github.com/jaya1971/Py-API/assets/43556775/45ee8ce2-779f-481b-998b-060ff67fe465)
+---
 Objective
 This post is to show how to publish a docker container image to an Azure Container registry, then deploy that image to Azure App Service. The web API will require a connection to an On-Prem database in a SQL server instance using the App Services' Hybrid connection feature. This uses a very simple python API creation calling stored procedures on a SQL server that returns results in a JSON format. The repository can be found here.
 
@@ -40,6 +41,7 @@ Walkthrough
     iii. Line 39,40 docker_img_path: is comprised of "<loginServer>/<repository>:<ImageTag>
     iv. Lines 47–57 contain the references to the called YAML files in the 'azurepipelines' folder.
     v. Lines 59–71 contain the stages and conditions to determine which YAML file to use.
+  
 2. Template YAML files.
   a. The called pipelines are broken into two jobs: "Build and Push the Image" and "Deploy Image to App Service".
     i. The first job "BuildAndPushImage" contains three tasks: "printAllVariables@1", and two "Docker@2".
@@ -49,6 +51,7 @@ Walkthrough
     ii. The second job "DeployImageToAppService" contains two tasks: "AzureWebContainer@1" and "AzureAppServiceSettings@1".
       1. AzureWebContainer@1: Will deploy the image from the container registry to the app service.
       2. AzureAppServiceSettings@1: Contains additional configuration settings.
+  
 3. This takes care of the basic setup of having your API's image in the acr and deployed to your App Service. Since we're working with an On-Prem database we'll need to configure a connection that will allow us to access the On-Prem SQL. If you navigate to your App Service's Log stream (Under Monitoring), you'll notice an error message that reads something like: "pyodbc.OperationalError: ('HYT00', u'[HYT00]……..". This usually indicates that you do not have a valid connection to your data source, in our case, our On-Prem SQL server. We'll also have to configure a way to pass the connection string information so our API will properly connect to our data source. The objective is to keep sensitive information hidden. We can do this by creating environment pipeline variables. There are various ways you can do this in Azure DevOps:
   a. Environment variables
     i. Pipeline variables - make sure you mark sensitive values as secret. Pipeline variables are kept in your pipeline and separate from your repository.
@@ -61,10 +64,13 @@ Walkthrough
     iii. Pass those values to your Dockerfile as parameters.
       1) Dockerfile: Lines 5–12 contain the passed variables from the YAML file as "ARG"
       2) They are converted into environment variables using the ENV tag.
+  
       iv. In the py app file, you can reference the environment variables passed by the Dockerfile as "os.getenv('<ENV_VARIABLENAME>')
 4. Now since we're connecting to an On-Prem SQL server, you'll still receive an error message that references a bad connection to your data source and that's because in this case we are trying to connect to an On-Prem data source. If your data source was an Azure SQL server, you would be able to successfully run your app service API. Let's configure a hybrid connection to our On-Prem SQL Server. (Great article with step by step - Hybrid Connection)
   a. In your Azure app service, navigate to Settings >> Networking >> Hybrid connections >> Add hybrid connection >> Create new hybrid connection. Create your hybrid connection. Your endpoint should be the SQL fqdn that can be found by an On-Prem node where you will install the hybrid connection agent. Copy the "Gateway Connection String", you'll need it when you install the agent On-Prem.
   b. Download the connection manager to install on an On-Prem node. When creating the connection, select manual and paste the "Gateway Connection String" you copied in the previous step. Restart the "Azure Hybrid Connection Manager Service". Then your hybrid connection should reflect as:
+  ![image](https://github.com/jaya1971/Py-API/assets/43556775/e99d241d-ee12-461a-96bc-a297779609b2)
+
 Challenges and things learned
 There were a few challenges and issues that popped up during this development. One of them being how to pass environmental variables to python, which is different depending on the method being used. The others are listed below.
 1. SQL Server instances. We have MS SQL Server configured with instances. When I first configured the hybrid connection, it read successful and connected but I was still receiving the pyodbc connection error message. This was because instances use different ports rather than the default 1433. This can be found in SQL Server Configuration Manager >> SQL Server Network Configuration >> Protocols >> TCP/IP >> IP Addresses tab, under IPAll, you will find the TCP Dynamic Port being used. You'll want to reference the instance in your ADO Pipeline as "server.domain.com,PORTNUMBER"
